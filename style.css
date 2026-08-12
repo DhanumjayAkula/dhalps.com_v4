@@ -1,0 +1,265 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --amber: #ffc61a;
+  --ink: #1a1206;
+}
+
+html { background: #e5a413; }
+
+/* the page itself never moves: scroll gestures are read in JS and spent on the
+   footage, so there is nothing to scroll and no scrollbar to hide */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  font: 400 15px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #fff;
+}
+
+/* ---- the fixed view ---- */
+#stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #e5a413;
+}
+
+#plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* ---- hud ---- */
+#hud {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 26px 34px;
+  font-size: 11px;
+  letter-spacing: .18em;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .92);
+  text-shadow: 0 1px 10px rgba(90, 55, 0, .35);
+  transition: opacity .4s ease;
+}
+#hud .brand { display: flex; align-items: center; gap: 9px; }
+#hud .brand i {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 12px var(--amber);
+}
+#hud .meta { opacity: .68; }
+
+/* ---- the prize card, parked over the toy ---- */
+#card {
+  position: absolute;
+  width: 336px;
+  padding: 26px 28px 24px;
+  border-radius: 26px;
+  text-decoration: none;
+  color: #fff;
+  isolation: isolate;
+
+  /* frosted amber: dense enough to read as a solid pane of glass, still lit
+     from behind by the footage */
+  background:
+    radial-gradient(130% 100% at 12% 0%, rgba(255, 224, 130, .5), rgba(255, 224, 130, 0) 58%),
+    linear-gradient(158deg, rgba(255, 199, 46, .72), rgba(226, 148, 8, .62));
+  backdrop-filter: blur(20px) saturate(1.35) brightness(1.04);
+  -webkit-backdrop-filter: blur(20px) saturate(1.35) brightness(1.04);
+  box-shadow:
+    0 26px 70px rgba(88, 48, 0, .34),
+    inset 0 1px 0 rgba(255, 255, 255, .45),
+    inset 0 -1px 0 rgba(120, 66, 0, .25);
+
+  /* the resting state is also where it is dealt from: a short hop up off the
+     figure that just landed */
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -100%) translate(0, 22px) scale(.95);
+  transition: opacity .35s ease, transform .45s cubic-bezier(.22, .9, .3, 1);
+}
+#card.on {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -100%) translate(0, 0) scale(1);
+  transition: opacity .45s ease, transform .55s cubic-bezier(.22, .9, .3, 1);
+}
+
+/* …and it does not fade out, it leaves: the figure walks off to the right and
+   out of frame, and the card flies the same way, shrinking with the same
+   perspective, holding its opacity until it is nearly gone (app.js triggers
+   this on the frame the figure turns, so the two travel together) */
+#card.gone {
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -100%) translate(420px, 150px) scale(.62) rotate(3deg);
+  transition:
+    transform 1.25s cubic-bezier(.42, 0, .72, .28),
+    opacity .4s ease .78s;
+}
+/* The glass edge: a 3px ring, cut out of a full-size gradient by a mask, so the
+   band can be lit and shaded around its run — a plain `border` colour cannot do
+   that. Hard stops, no blur: the bevel reads as ground glass, not a glow.
+
+   The ring is its own rotated element, sitting 1.5px off the card at the
+   corners (0.52deg over a 330px card) — the tilt is what makes it read as a
+   separate pane of glass laid over the panel rather than a painted outline. */
+#card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 3px;
+  transform: rotate(0.52deg);
+  transform-origin: 50% 50%;
+
+  background:
+    /* the flare — where the light catches the band, top-right and bottom-left */
+    radial-gradient(110px 80px at 100% 0%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, .96) 34%, rgba(255, 255, 255, 0) 76%),
+    radial-gradient(120px 90px at 0% 100%, rgba(255, 255, 255, .92) 0%, rgba(255, 255, 255, .7) 36%, rgba(255, 255, 255, 0) 76%),
+    /* the emboss — lit off the top-left, cut hard to a shadowed bottom-right */
+    linear-gradient(135deg,
+      rgba(255, 255, 255, .85) 0%,
+      rgba(255, 255, 255, .55) 18%,
+      rgba(255, 255, 255, .12) 19%,
+      rgba(255, 255, 255, .12) 74%,
+      rgba(60, 30, 0, .38) 75%,
+      rgba(30, 14, 0, .5) 100%);
+
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+#card:hover::before { filter: brightness(1.18); }
+
+#card .tag {
+  display: inline-block;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: rgba(58, 33, 0, .45);
+  border: 1px solid rgba(255, 255, 255, .14);
+  font-size: 10.5px;
+  letter-spacing: .16em;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+#card h2 {
+  margin: 16px 0 12px;
+  font-size: 32px;
+  line-height: 1.04;
+  font-weight: 700;
+  letter-spacing: .005em;
+  text-transform: uppercase;
+}
+#card p {
+  font-size: 15px;
+  line-height: 1.52;
+  color: rgba(255, 255, 255, .95);
+}
+#card .go {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 20px;
+  font-size: 12px;
+  letter-spacing: .15em;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #ffdc55;
+}
+#card .go b { transition: transform .3s ease; }
+#card:hover .go b { transform: translateX(5px); }
+
+/* narrow: the toy is small and centred, so the card sits under it */
+@media (max-width: 780px) {
+  #card {
+    left: 50% !important;
+    top: auto !important;
+    bottom: 96px;
+    width: min(88vw, 360px);
+    transform: translate(-50%, 24px) scale(.94);
+  }
+  #card.on { transform: translate(-50%, 0) scale(1); }
+  #card.gone { transform: translate(-50%, 0) translate(78vw, 90px) scale(.6) rotate(3deg); }
+  #card h2 { font-size: 24px; }
+  #hud .meta { display: none; }
+}
+
+/* ---- footer cue ---- */
+#cue {
+  position: absolute;
+  left: 0; right: 0; bottom: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-size: 10.5px;
+  letter-spacing: .2em;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .8);
+  text-shadow: 0 1px 10px rgba(90, 55, 0, .35);
+  pointer-events: none;
+}
+#ticks { display: flex; gap: 20px; list-style: none; }
+#ticks li {
+  position: relative;
+  padding-bottom: 8px;
+  opacity: .45;
+  transition: opacity .3s ease, color .3s ease;
+}
+#ticks li::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: currentColor;
+  opacity: .3;
+}
+#ticks li.done { opacity: .7; }
+#ticks li.on { opacity: 1; color: var(--amber); }
+
+/* ---- loader: scrubbing seeks anywhere, so hold until the take is downloaded ---- */
+#loader {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e5a413;
+  transition: opacity .6s ease;
+}
+#loader.gone { opacity: 0; pointer-events: none; }
+#bar {
+  width: min(220px, 50vw);
+  height: 2px;
+  background: rgba(255, 255, 255, .3);
+  transform-origin: left;
+}
+#bar::after {
+  content: "";
+  display: block;
+  height: 100%;
+  background: #fff;
+  transform: scaleX(var(--p, 0));
+  transform-origin: left;
+  transition: transform .25s ease;
+}

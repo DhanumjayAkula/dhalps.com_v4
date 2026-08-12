@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" class="loading">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dhalps — scroll to pick</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main id="stage">
+  <video id="plate" src="video.mp4" muted playsinline preload="auto"></video>
+
+  <header id="hud">
+    <span class="brand"><i></i>DHALPS</span>
+    <span class="meta">SCROLL TO PICK A PROJECT</span>
+  </header>
+
+  <a id="card" href="https://google.com">
+    <span class="tag" id="c-tag"></span>
+    <h2 id="c-title"></h2>
+    <p id="c-body"></p>
+    <span class="go">EXPLORE PROJECT <b>&rarr;</b></span>
+  </a>
+
+  <footer id="cue">
+    <ol id="ticks"></ol>
+    <span id="cue-label">SCROLL TO PICK</span>
+  </footer>
+</main>
+
+<div id="loader"><div id="bar"></div></div>
+
+<script src="app.js"></script>
+</body>
+</html>
