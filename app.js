@@ -215,10 +215,12 @@ addEventListener('touchend', () => { touchY = null; });
 addEventListener('resize', place, { passive: true });
 
 // ---- loader -----------------------------------------------------------------
-/* A beat that runs into unbuffered footage stalls mid-move, so hold the page
-   until enough of the take is down to play through the first few beats. */
+/* Only the first scroll has to be ready to paint: the footage keeps downloading
+   while the visitor sits parked on a beat, and every beat after this one is a
+   couple of seconds long. Gating on a share of the whole file instead would
+   hold a blank page for megabytes nobody needs yet. */
 
-const BUFFERED = 0.4;
+const NEED     = BEATS[1].t + 1.5;   // seconds of footage the first beat spends, plus slack
 const MAX_WAIT = 15000;
 
 const loader = document.getElementById('loader');
@@ -229,9 +231,8 @@ function tick() {
   if (revealed) return;
   let end = 0;
   for (let i = 0; i < plate.buffered.length; i++) end = Math.max(end, plate.buffered.end(i));
-  const p = plate.duration ? clamp(end / plate.duration, 0, 1) : 0;
-  bar.style.setProperty('--p', Math.min(1, p / BUFFERED).toFixed(3));
-  if (p >= BUFFERED && plate.readyState >= 3) reveal();
+  bar.style.setProperty('--p', clamp(end / NEED, 0, 1).toFixed(3));
+  if (end >= NEED && plate.readyState >= 3) reveal();
 }
 
 function reveal() {
