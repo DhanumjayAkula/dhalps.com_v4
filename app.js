@@ -30,7 +30,6 @@ const PROJECTS = [
    is dealt there by itself. */
 const BEATS = [
   { t: 0.00,  card: -1 },                   // rest: the machine, far off
-  { t: 1.40,  card: -1 },                   // camera zooms into the machine
   { t: 3.38,  card: -1 },                   // the machine slides to the left
   { t: 7.50,  card: 0  },                   // figure is picked, walks out, lands -> popup
   { t: 11.83, card: -1 },                   // popup flies off with the figure
