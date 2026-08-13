@@ -9,7 +9,8 @@
 <body>
 
 <main id="stage">
-  <video id="plate" src="video.mp4" muted playsinline preload="auto"></video>
+  <!-- no src: app.js downloads the file in full, then hands it over as a blob -->
+  <video id="plate" muted playsinline preload="auto"></video>
 
   <header id="hud">
     <span class="brand"><i></i>DHALPS</span>
@@ -29,7 +30,10 @@
   </footer>
 </main>
 
-<div id="loader"><div id="bar"></div></div>
+<div id="loader">
+  <div id="bar"></div>
+  <span id="pct">0%</span>
+</div>
 
 <script src="app.js"></script>
 </body>

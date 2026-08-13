@@ -107,9 +107,11 @@ body {
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, -100%) translate(420px, 150px) scale(.62) rotate(3deg);
+  /* the walk-off runs at 1.5x now (RATE in app.js), so the flight is cut to
+     match — the card has to be gone by the time the figure is */
   transition:
-    transform 1.25s cubic-bezier(.42, 0, .72, .28),
-    opacity .4s ease .78s;
+    transform .83s cubic-bezier(.42, 0, .72, .28),
+    opacity .3s ease .53s;
 }
 /* The glass edge: a 3px ring, cut out of a full-size gradient by a mask, so the
    band can be lit and shaded around its run — a plain `border` colour cannot do
@@ -242,10 +244,19 @@ body {
   inset: 0;
   z-index: 10;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 14px;
   background: #e5a413;
   transition: opacity .6s ease;
+}
+#pct {
+  font-size: 11px;
+  letter-spacing: .2em;
+  font-weight: 600;
+  color: rgba(255, 255, 255, .85);
+  font-variant-numeric: tabular-nums;
 }
 #loader.gone { opacity: 0; pointer-events: none; }
 #bar {

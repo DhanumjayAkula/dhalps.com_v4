@@ -53,7 +53,8 @@ const EXITS = [9.89, 15.88, 20.13, 25.67];
 const ASPECT  = 16 / 9;
 const TOY     = { fx: 0.745, fy: 0.72, h: 0.27 };  // where a figure stands, in frame units
 const EPS     = 0.03;                              // seconds; closer than this counts as parked
-const REWIND  = 2.5;                               // scroll-up runs the footage back this fast
+const RATE    = 1.5;                               // the take is cut slow for a scroll — run it up
+const REWIND  = 2.5 * RATE;                        // …and keep the rewind faster than the playback
 const NUDGE   = 26;                                // wheel delta that counts as one gesture
 const SETTLE  = 120;                               // ms of quiet before the next gesture is taken
 
@@ -141,6 +142,7 @@ function drive() {
   if (gap > 0) {
     // the popup stays put until its figure actually starts walking off
     const leaveAt = lit >= 0 ? EXITS[lit] : -1;
+    plate.playbackRate = RATE;      // some browsers reset the rate on a source change
     plate.play().catch(() => {});   // forward is real playback, so it never judders
     const fwd = () => {
       if (leaveAt >= 0 && plate.currentTime >= leaveAt) light(-1, true);
@@ -215,42 +217,65 @@ addEventListener('touchend', () => { touchY = null; });
 addEventListener('resize', place, { passive: true });
 
 // ---- loader -----------------------------------------------------------------
-/* Only the first scroll has to be ready to paint: the footage keeps downloading
-   while the visitor sits parked on a beat, and every beat after this one is a
-   couple of seconds long. Gating on a share of the whole file instead would
-   hold a blank page for megabytes nobody needs yet. */
+/* The whole file is downloaded before the page is shown, and then handed to the
+   <video> as a blob. That is the difference between "mostly buffered" and
+   "here": a plain src leaves the browser free to fetch in dribs, and every beat
+   that runs into a gap stalls mid-move. Once it is a blob there is no network
+   left in the loop — playback and the rewind seeks are all out of memory. */
 
-const NEED     = BEATS[1].t + 1.5;   // seconds of footage the first beat spends, plus slack
-const MAX_WAIT = 15000;
+const SRC = 'video.mp4';
 
 const loader = document.getElementById('loader');
 const bar = document.getElementById('bar');
-let revealed = false, poll = 0;
+const pct = document.getElementById('pct');
+let revealed = false;
 
-function tick() {
-  if (revealed) return;
-  let end = 0;
-  for (let i = 0; i < plate.buffered.length; i++) end = Math.max(end, plate.buffered.end(i));
-  bar.style.setProperty('--p', clamp(end / NEED, 0, 1).toFixed(3));
-  if (end >= NEED && plate.readyState >= 3) reveal();
+function progress(p) {
+  bar.style.setProperty('--p', p.toFixed(3));
+  pct.textContent = `${Math.round(p * 100)}%`;
 }
 
 function reveal() {
   if (revealed) return;
   revealed = true;
-  clearInterval(poll);
-  bar.style.setProperty('--p', '1');
+  progress(1);
   loader.classList.add('gone');
   document.documentElement.classList.remove('loading');
   loader.addEventListener('transitionend', () => loader.remove(), { once: true });
   park();
 }
 
-['progress', 'loadeddata', 'canplaythrough'].forEach(e => plate.addEventListener(e, tick));
-plate.addEventListener('error', reveal);     // a missing video must not hang the page
-poll = setInterval(tick, 250);               // `progress` fires sporadically; this does not
-setTimeout(reveal, MAX_WAIT);
-tick();
+// hold until the video element has the first frame of the blob decoded, so the
+// page never appears on an empty <video>
+function handOver(url) {
+  plate.addEventListener('loadeddata', reveal, { once: true });
+  plate.addEventListener('error', reveal, { once: true });
+  plate.src = url;
+  plate.load();
+}
+
+async function download() {
+  const res = await fetch(SRC);
+  if (!res.ok) throw new Error(res.status);
+
+  const total = Number(res.headers.get('content-length')) || 0;
+  const chunks = [];
+  let got = 0;
+
+  const reader = res.body.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    got += value.length;
+    if (total) progress(clamp(got / total, 0, 1));
+  }
+  handOver(URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' })));
+}
+
+// no streams, no fetch, or the file simply is not there: fall back to letting
+// the element load it the ordinary way rather than hanging on a blank page
+download().catch(() => handOver(SRC));
 
 // ---- self-check: #selftest ---------------------------------------------------
 if (location.hash === '#selftest') {
